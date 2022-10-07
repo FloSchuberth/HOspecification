@@ -11,7 +11,8 @@ GRS~~SRS
 
 modelHO=specifyHO(.model=model,
                 .typeHO='refined',
-                .order_indicators = 'exact')
+                .order_indicators = 'exact',
+                .print_to_console = T)
 
 modelHO
 
