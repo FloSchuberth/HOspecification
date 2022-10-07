@@ -14,6 +14,8 @@ install.packages('combinat')
 # .order_indicators: determines the order of the indicators:
 #   -'exact': use the original order of the lavaan model provided by the user
 #   -'random': randomly orders the indicators; this allows to try different specifications, e.g., in case of convergence issues. 
+# 
+#  .print_to_console: determines whether the model is printed to the console or not. 
 
 specifyHO <- function(.model = NULL,
                       .typeHO = c('normal','refined'), 
