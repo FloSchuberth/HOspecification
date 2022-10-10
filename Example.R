@@ -12,11 +12,11 @@ GRS~~SRS
 modelHO=specifyHO(.model=model,
                 .typeHO='refined',
                 .order_indicators = 'exact',
-                .print_to_console = T)
+                .print_to_console = T,
+                .determine_weights = T)
 
 modelHO
-
+library(lavaan)
 out= sem(model = modelHO,data=dataset,orthogonal=T)
 summary(out,standardized=T)
 
-# lav_model=modelcfa
