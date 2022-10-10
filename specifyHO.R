@@ -1,5 +1,7 @@
 # packages required to use this function
-install.packages('combinat')
+install.packages(c('combinat','calculus'))
+
+
 # This function converts a lavaan model containing composites specified via the '<~' command
 # into a lavaan model in which composites are specified by means of the Henseler-Ogasawara (H-O) specification.
 # Note, if you want to apply the sem or cfa function of the lavaan package to the model, 
