@@ -1,5 +1,5 @@
 # packages required to use this function
-install.packages(c('combinat','calculus'))
+# install.packages(c('combinat','calculus'))
 
 
 # This function converts a lavaan model containing composites specified via the '<~' command
