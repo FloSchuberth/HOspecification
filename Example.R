@@ -1,4 +1,5 @@
-library(lavaan)
+# Load the function from GitHub
+devtools::source_url("https://github.com/FloSchuberth/HOspecification/blob/main/specifyHO.R?raw=TRUE")
 
 model='
  PSS <~ PSS1+PSS2 +PSS3+ PSS4+ PSS5
