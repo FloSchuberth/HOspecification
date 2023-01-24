@@ -21,12 +21,15 @@
 # 
 # 
 #  .print_to_console: determines whether the model is printed to the console. 
+# 
+#  .set_seed: can be used to fix the order of the indicator names in case of .order_indicators = 'random'.
 
 specifyHO <- function(.model = NULL,
                       .typeHO = c('normal','refined'), 
                       .order_indicators=c('exact','random'),
                       .determine_weights=TRUE,
-                      .print_to_console=FALSE){
+                      .print_to_console=FALSE,
+                      .set_seed=NULL){
   
   
   # Load required packages ----
@@ -52,8 +55,13 @@ specifyHO <- function(.model = NULL,
     nameIndicators <- strsplit(x=nameEmergentAndIndicators[2],split='+',fixed=TRUE)[[1]]
 
     if(.order_indicators == 'random'){#else the indicator names are used in order as provided by the user
-      allindicatorCombinations <- combinat::permn(nameIndicators)
-      nameIndicators <- allindicatorCombinations[[sample(x = 1:length(allindicatorCombinations), size = 1)]]
+      # Leads to problems if there are too many indicators
+      # allindicatorCombinations <- combinat::permn(nameIndicators)
+      # nameIndicators <- allindicatorCombinations[[sample(x = 1:length(allindicatorCombinations), size = 1)]]
+      if(!is.null(.set_seed)){
+        set.seed(.set_seed)
+      }
+      nameIndicators <- nameIndicators[sample.int(length(nameIndicators))]
     }
     
     # Specify equation for the emergent variable
