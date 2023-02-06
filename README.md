@@ -24,7 +24,7 @@ modelHO=specifyHO(.model=model,
                 .order_indicators = 'exact',
                 .print_to_console = T,
                 .determine_weights = T,
-                .seed=NULL)
+                .seed = NULL)
 modelHO
 ```
 The output of the `specifyHO` function is a character string that contains the model and that can be directly used as input for the `sem()` or `cfa()` function of lavaan. Hereby it is important that the `orthogonal` argument is set to `TRUE` to ensure the correct parameterization:
