@@ -10,11 +10,16 @@ It is noteworthy that the model syntax for the emergent variables must not conta
 An example can be found in the following:
 ``` r
 model='
-PSS <~ PSS1+PSS2 +PSS3+ PSS4+ PSS5
-GRS<~GRS1+ GRS2+GRS3+GRS4+GRS5
-SRS<~SRS1+SRS2+SRS3+SRS4+SRS5
-PSS~~GRS + SRS
-GRS~~SRS
+# Specify the emergent variables
+PSS <~ PSS1 + PSS2 + PSS3 + PSS4 + PSS5
+GRS <~ GRS1 + GRS2 + GRS3 + GRS4 + GRS5
+SRS <~ SRS1 + SRS2 + SRS3 + SRS4 + SRS5
+
+# Specify the relationships among the emergent variables
+GRS ~~ PSS + SRS + Reader
+PSS ~~ SRS + Reader
+SRS ~~ Reader
+
 '
 ``` 
 To obtain the H-O specification of this model, the `specifyHO` function can be used. 
