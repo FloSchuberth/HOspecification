@@ -19,17 +19,17 @@ GRS~~SRS
 ``` 
 To obtain the H-O specification of this model, the `specifyHO` function can be used. 
 ``` r
-modelHO=specifyHO(.model=model,
-                .typeHO='refined',
-                .order_indicators = 'exact',
-                .print_to_console = T,
-                .determine_weights = T,
-                .seed = NULL)
+modelHO = specifyHO(.model=model,
+                    .typeHO='refined',
+                    .order_indicators = 'exact',
+                    .print_to_console = T,
+                    .determine_weights = T,
+                    .seed = NULL)
 modelHO
 ```
 The output of the `specifyHO` function is a character string that contains the model and that can be directly used as input for the `sem()` or `cfa()` function of lavaan. Hereby it is important that the `orthogonal` argument is set to `TRUE` to ensure the correct parameterization:
 ``` r
 library(lavaan)
-out= sem(model = modelHO,data=dataset,orthogonal=T)
-summary(out,standardized=T)
+out = sem(model = modelHO, data = dataset, orthogonal = TRUE)
+summary(out, standardized = TRUE)
 ```
