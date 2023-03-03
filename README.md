@@ -1,4 +1,4 @@
-# Function that facilitates the H-O specification
+# Function that facilitates using the H-O specification
 
 To load the specifyHO, you can use the following syntax:
 ``` r
