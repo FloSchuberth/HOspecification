@@ -103,7 +103,7 @@ if(sum(duplicated(temp1))!=0){
     names(WeightValues) <- nameIndicators
     
     if(length(WeightValues[!is.na(WeightValues)])!=0){
-      .typeHO == "refined"
+      .typeHO = "refined"
       warning("Since weights are preset, `.typeHO` was set to `refined`.")
     }
     
@@ -129,8 +129,8 @@ if(sum(duplicated(temp1))!=0){
       namePhantom <- paste0('p',nameIndicators)
       names(namePhantom) <- nameIndicators
       
-      tempEmer <- paste0(nameEmergent,'=~',paste0(namePhantom,collapse = '+'),if(length(nameIndicators)>1){paste0('+',paste0('start(0)','*',namePhantom,collapse = '+'))},
-                         paste0("+",paste0(paste0('l',nameEmergent,1:length(nameIndicators)),"*",namePhantom,collapse= "+")))  
+      tempEmer <- paste0(nameEmergent,'=~',paste0(namePhantom,collapse = '+'),
+                         paste0("+",paste0(paste0('l',nameEmergent,1:length(nameIndicators)),"*",namePhantom,collapse= "+")),"+NA","*",namePhantom[1])  
     
       
       # Add constraint
