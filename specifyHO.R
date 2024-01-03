@@ -76,6 +76,37 @@ if(sum(duplicated(temp1))!=0){
     nameEmergent <- nameEmergentAndIndicators[1]
     nameIndicators <- strsplit(x=nameEmergentAndIndicators[2],split='+',fixed=TRUE)[[1]]
 
+    nameIndicatorstemp <- strsplit(x=nameEmergentAndIndicators[2],split='+',fixed=TRUE)[[1]]
+    nameIndicatorstemp1 <- strsplit(x=nameIndicatorstemp,split='*',fixed=TRUE)
+    
+    nameIndicators <- sapply(nameIndicatorstemp1,function(x){
+      if(length(x)==1){
+        x
+      }else if(length(x)==2){
+        x[2]
+      } else {
+        stop("Something went wrong.")
+      }
+    })
+    
+    # Store fixed weight values
+    WeightValues <- sapply(nameIndicatorstemp1,function(x){
+      if(length(x)==1){
+        NA
+      }else if(length(x)==2){
+        x[1]
+      } else {
+        stop("Something went wrong.")
+      }
+    })
+    
+    names(WeightValues) <- nameIndicators
+    
+    if(length(WeightValues[!is.na(WeightValues)])!=0){
+      .typeHO == "refined"
+      warning("Since weights are preset, `.typeHO` was set to `refined`.")
+    }
+    
     if(.order_indicators == 'random'){#else the indicator names are used in order as provided by the user
       # Leads to problems if there are too many indicators
       # allindicatorCombinations <- combinat::permn(nameIndicators)
@@ -86,10 +117,42 @@ if(sum(duplicated(temp1))!=0){
       nameIndicators <- nameIndicators[sample.int(length(nameIndicators))]
     }
     
+    # If there are no fixed weights
+    if(length(WeightValues[!is.na(WeightValues)])==0){
     # Specify equation for the emergent variable
     tempEmer <- paste0(nameEmergent,'=~',paste0(nameIndicators,collapse = '+'),if(length(nameIndicators)>1){paste0('+',paste0('start(0)','*',nameIndicators[-1],collapse = '+'))})
 
     # Fix all random measurement errors to zero
+   
+    }else{ # if there are fixed weights use phantom variable approach
+    
+      namePhantom <- paste0('p',nameIndicators)
+      names(namePhantom) <- nameIndicators
+      
+      tempEmer <- paste0(nameEmergent,'=~',paste0(namePhantom,collapse = '+'),if(length(nameIndicators)>1){paste0('+',paste0('start(0)','*',namePhantom,collapse = '+'))},
+                         paste0("+",paste0(paste0('l',nameEmergent,1:length(nameIndicators)),"*",namePhantom,collapse= "+")))  
+    
+      
+      # Add constraint
+      ConstraintEmer <- paste0(paste0('l',nameEmergent,1:length(nameIndicators),collapse="+"),"==1")
+      
+      ErrcovPhan <-  paste0(namePhantom,'~~0*',namePhantom,collapse='\n')
+      
+      # Specify relations between indicators and phantom variables
+      relPhantomInd = list()
+      for(j in nameIndicators){
+        relPhantomInd[j] <- paste0(namePhantom[j],"=~",
+                                   if(!is.na(WeightValues[j])){paste0("(1/",WeightValues[j],")")
+          }else{
+            WeightValues[j] 
+          },"*",j)
+      }
+      
+      RelPhantom <- paste0(unlist(relPhantomInd),collapse = '\n')    
+      }
+
+    
+    
     tempErrcov <- paste0(nameIndicators,'~~0*',nameIndicators,collapse='\n')
     
     if(length(nameIndicators)>1){
@@ -98,11 +161,20 @@ if(sum(duplicated(temp1))!=0){
       excrescentNames <- paste0('e',Line,1:(length(nameIndicators)-1))
       
       # Loading pattern of the excrescent variables
-      Loadingmatrix <- as.data.frame(matrix(0,ncol=length(nameIndicators),nrow=length(excrescentNames),dimnames=list(excrescentNames,nameIndicators)))  
+      if(length(WeightValues[!is.na(WeightValues)])==0){
+        Loadingmatrix <- as.data.frame(matrix(0,ncol=length(nameIndicators),nrow=length(excrescentNames),dimnames=list(excrescentNames,nameIndicators)))  
+      } else { #if fixed weights are used, use always refined HO
+        
+        Loadingmatrix <- as.data.frame(matrix(0,ncol=length(namePhantom),nrow=length(excrescentNames),dimnames=list(excrescentNames,namePhantom)))  
+      }
       if(.typeHO == 'refined'){
         # fill loading matrix
         for(j in 1:nrow(Loadingmatrix)){
-          Loadingmatrix[j,] <- c(rep(0,times=(j-1)),'NA',1,rep(0,ncol(Loadingmatrix)-(j+1))) 
+          if(length(WeightValues[!is.na(WeightValues)])==0){
+            Loadingmatrix[j,] <- c(rep(0,times=(j-1)),'NA',1,rep(0,ncol(Loadingmatrix)-(j+1))) 
+          } else { # In case of fixed weights
+            Loadingmatrix[j,] <- c(rep(0,times=(j-1)),-1,1,rep(0,ncol(Loadingmatrix)-(j+1))) 
+          }
         }
       }
       if(.typeHO == 'normal'){
@@ -115,12 +187,28 @@ if(sum(duplicated(temp1))!=0){
       # specify excrescent variables
       tempExcr <- list()
       for(j in excrescentNames){
-        tempExcr[[j]] <- paste0(paste0(j,'=~', paste0(paste0(Loadingmatrix[j,],'*'),nameIndicators,collapse = '+')),'+',
-                                paste0(if(.typeHO == 'refined'){
-                                  'start(-1)'
-                                } else if(.typeHO == 'normal'){
-                                  'start(0)' 
-                                },'*',colnames(Loadingmatrix[j,])[which(Loadingmatrix[j,]=='NA')],collapse = '+'))
+        # tempExcr[[j]] <- paste0(paste0(j,'=~', paste0(paste0(Loadingmatrix[j,],'*'),colnames(Loadingmatrix),collapse = '+')),'+',
+        #                         paste0(if(.typeHO == 'refined'){
+        #                           'start(-1)'
+        #                         } else if(.typeHO == 'normal'){
+        #                           'start(0)' 
+        #                         },'*',colnames(Loadingmatrix[j,])[which(Loadingmatrix[j,]=='NA')],collapse = '+'))
+
+        
+          temp = paste0(j,'=~', paste0(paste0(Loadingmatrix[j,],'*'),colnames(Loadingmatrix),collapse = '+'))
+        if(length(WeightValues[!is.na(WeightValues)])==0){          
+          tempExcr[[j]] <- paste0(temp ,'+',
+               paste0(if(.typeHO == 'refined'){
+                 'start(-1)'
+               } else if(.typeHO == 'normal'){
+                 'start(0)' 
+               },'*',colnames(Loadingmatrix[j,])[which(Loadingmatrix[j,]=='NA')],collapse = '+'))  
+        } else {
+          tempExcr[[j]] <- temp
+        }
+                       
+        
+        
         
       }
       
@@ -238,7 +326,11 @@ if(sum(duplicated(temp1))!=0){
       }
       
       # Put everything together
-      eachline[Line] <- paste0(tempEmer,'\n',paste0(unlist(tempExcr),collapse='\n'),'\n',paste0(unlist(tempExcrCov),collapse='\n'),'\n',tempErrcov,if(.determine_weights == TRUE){
+      eachline[Line] <- paste0(tempEmer,'\n',paste0(unlist(tempExcr),collapse='\n'),'\n',paste0(unlist(tempExcrCov),collapse='\n'),'\n',tempErrcov,
+                               if(length(WeightValues[!is.na(WeightValues)])!=0){
+                                 paste0("\n",RelPhantom,"\n",ConstraintEmer, "\n",ErrcovPhan)
+                               },
+                               if(.determine_weights == TRUE){
         paste0('\n',Wspec,'\n',varEmer, '\n',varExcr,'\n',varInd, '\n',wspecstd)})
       
     }else{ #single-indicator composite
