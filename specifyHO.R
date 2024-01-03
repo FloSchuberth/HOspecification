@@ -9,6 +9,8 @@
 # 
 # The function provides the following argument:
 # .model: lavaan model; this model should not include any additional specifications such as *value, *NA or comments (#). 
+# Moreover, composites need to be specified in one line, i.e., it is currently not possible to specify a composite c1 that is formed 
+# by x1 and x2 as c1<~ x1 and c1<~ x2.
 # # .typeHO: the type of H-O specification:
 #   -'refined': Refined H-O specification
 #   -'normal': Normal H-O specification as presented in Schuberth (in press)
@@ -39,9 +41,29 @@ specifyHO <- function(.model = NULL,
   .typeHO <- match.arg(.typeHO)
   .order_indicators <- match.arg(.order_indicators)
 
+  
   eachline <- strsplit(x=.model,split='\\n')[[1]]
   positionEmergent <- grep(x=eachline,pattern = '<~')
+
   
+  # Check whether a composite has been specified over various lines  
+temp=lapply(eachline,function(x){
+  temp <- strsplit(x,split="<~")[[1]]
+  })
+  
+temp1=sapply(temp,function(x){
+  if(length(x)==2){
+    x[1]
+  }else{
+    NA
+  }
+})
+
+temp1=temp1[!is.na(temp1)]
+if(sum(duplicated(temp1))!=0){
+  stop("Please specify your composites in a single line.")
+}
+
   # loop over all lines that contain a composite
   for(Line in positionEmergent){
     
