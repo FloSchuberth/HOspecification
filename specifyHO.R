@@ -60,6 +60,7 @@ temp1=sapply(temp,function(x){
 })
 
 temp1=temp1[!is.na(temp1)]
+
 if(sum(duplicated(temp1))!=0){
   stop("Please specify your composites in a single line.")
 }
@@ -104,7 +105,7 @@ if(sum(duplicated(temp1))!=0){
     
     if(length(WeightValues[!is.na(WeightValues)])!=0){
       .typeHO = "refined"
-      warning("Since weights are preset, `.typeHO` was set to `refined`.")
+      warning("Since weights are preset, `.typeHO` is set to `refined`.")
     }
     
     if(.order_indicators == 'random'){#else the indicator names are used in order as provided by the user
@@ -157,16 +158,15 @@ if(sum(duplicated(temp1))!=0){
     
     if(length(nameIndicators)>1){
       
-      # excrescentNames <- paste0(nameEmergent,'e',1:(length(nameIndicators)-1))
       excrescentNames <- paste0('e',Line,1:(length(nameIndicators)-1))
       
       # Loading pattern of the excrescent variables
       if(length(WeightValues[!is.na(WeightValues)])==0){
         Loadingmatrix <- as.data.frame(matrix(0,ncol=length(nameIndicators),nrow=length(excrescentNames),dimnames=list(excrescentNames,nameIndicators)))  
       } else { #if fixed weights are used, use always refined HO
-        
         Loadingmatrix <- as.data.frame(matrix(0,ncol=length(namePhantom),nrow=length(excrescentNames),dimnames=list(excrescentNames,namePhantom)))  
       }
+      
       if(.typeHO == 'refined'){
         # fill loading matrix
         for(j in 1:nrow(Loadingmatrix)){
@@ -215,9 +215,8 @@ if(sum(duplicated(temp1))!=0){
       # Specify covariances among the excrescent variables
       tempExcrCov <- list()
       if(.typeHO == 'refined'){
-        
         ExcrCov <- as.data.frame(matrix(0,ncol=length(excrescentNames),nrow=length(excrescentNames),dimnames=list(excrescentNames,excrescentNames))) 
-        
+  
         # Fill covariance matrix of the excrescent variables
         ExcrCov[upper.tri(ExcrCov)]<-1
 
