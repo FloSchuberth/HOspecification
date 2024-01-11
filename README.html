@@ -352,14 +352,15 @@ display: none;
 </div>
 
 
-<div id="function-that-facilitates-the-h-o-specification" class="section level1">
-<h1>Function that facilitates the H-O specification</h1>
+<div id="function-that-facilitates-using-the-h-o-specification" class="section level1">
+<h1>Function that facilitates using the H-O specification</h1>
 <p>To load the specifyHO, you can use the following syntax:</p>
 <pre class="r"><code>devtools::source_url(&quot;https://github.com/FloSchuberth/HOspecification/blob/main/specifyHO.R?raw=TRUE&quot;)</code></pre>
 <p>In a next step, the model is specified in lavaan syntax using the
 <code>&lt;~</code> operator to specify emergent variables. It is
 noteworthy that the model syntax for the emergent variables must not
-contain any parameter labels or constraints.<br />
+contain any parameter labels and that emergent variables must not be
+specified in various lines.<br />
 An example can be found in the following:</p>
 <pre class="r"><code>model=&#39;
 # Specify the emergent variables

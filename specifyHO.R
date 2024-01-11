@@ -8,7 +8,8 @@
 # make sure that orthogonal is set to TRUE; otherwise, not all necessary constraints are imposed. 
 # 
 # The function provides the following argument:
-# .model: lavaan model; this model should not include any additional specifications such as *value, *NA or comments (#). 
+# .model: lavaan model; this model should not include any additional specifications such as *NA or comments (#).
+# However, it is possible to constrain weights to certain values, e.g., c1 <~ 1*x1 + x2 + 3*x3
 # Moreover, composites need to be specified in one line, i.e., it is currently not possible to specify a composite c1 that is formed 
 # by x1 and x2 as c1<~ x1 and c1<~ x2.
 # # .typeHO: the type of H-O specification:
@@ -19,7 +20,7 @@
 #   -'exact': use the original order of the lavaan model provided by the user
 #   -'random': randomly orders the indicators; this allows to try different specifications, e.g., in case of convergence issues. 
 # 
-# .determine_weights: determines whether the weights should be calculated.
+# .determine_weights: determines whether the (standardized) weights should be calculated.
 # 
 # 
 #  .print_to_console: determines whether the model is printed to the console. 
