@@ -6,7 +6,7 @@ devtools::source_url("https://github.com/FloSchuberth/HOspecification/blob/main/
 ```
 
 In a next step, the model is specified in lavaan syntax using the `<~` operator to specify emergent variables. 
-It is noteworthy that the model syntax for the emergent variables must not contain any parameter labels and that 
+It is noteworthy that the model syntax for the emergent variables must not contain any parameter labels and 
 emergent variables must not be specified in various lines.  
 An example can be found in the following:
 ``` r
