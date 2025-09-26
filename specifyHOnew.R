@@ -284,73 +284,83 @@ specifyHO <- function(.model = NULL,
       
       if(.determine_weights == TRUE){
         
-        # Create loading matrix of the emergent and excrescent variables
-        mL <- rbind(labLoadEmer,
-                    as.matrix(LoadingNamesmatrix))
         
-        outW <- mxinv(t(mL))
-        
-        if(ThereArePresetWeights){
-          weightValuestemp = WeightValues
-          for(i in 1:length(WeightValues)){
-            if(is.na(WeightValues[i])){
-              weightValuestemp[i] <- paste0("l",nameIndicators[i])
-            }else if(!is.na(WeightValues[i])){
-              weightValuestemp[i] <- paste0("1/",WeightValues[i])
+        if(.typeHO %in% c('original','refined','pseudo')){
+          # Create loading matrix of the emergent and excrescent variables
+          mL <- rbind(labLoadEmer,
+                      as.matrix(LoadingNamesmatrix))
+          
+          outW <- mxinv(t(mL))
+          
+          if(ThereArePresetWeights){
+            weightValuestemp = WeightValues
+            for(i in 1:length(WeightValues)){
+              if(is.na(WeightValues[i])){
+                weightValuestemp[i] <- paste0("l",nameIndicators[i])
+              }else if(!is.na(WeightValues[i])){
+                weightValuestemp[i] <- paste0("1/",WeightValues[i])
+              }
             }
+            
+            # construct the loading matrix between the indicators and the phantom variables
+            mLL <- matrix(0,nrow=length(nameIndicators),ncol=length(namePhantom),dimnames=list(nameIndicators,namePhantom))
+            diag(mLL) <-weightValuestemp
+            
+            outW <- mx(outW,mxinv(mLL))
           }
           
-          # construct the loading matrix between the indicators and the phantom variables
-          mLL <- matrix(0,nrow=length(nameIndicators),ncol=length(namePhantom),dimnames=list(nameIndicators,namePhantom))
-          diag(mLL) <-weightValuestemp
+          Wspec <- paste0('w',nameIndicators,':=',outW[1,],collapse='\n' )
           
-          outW <- mx(outW,mxinv(mLL))
-        }
-        
-        Wspec <- paste0('w',nameIndicators,':=',outW[1,],collapse='\n' )
-        
-        
-        # determine variances of the indicators
-        vcvemerexcr <- matrix(0,nrow=ncol(mL),ncol=ncol(mL))
-        if(.typeHO=='original'){
-          diag(vcvemerexcr) <- c(paste0('v',nameEmergent),paste0('v',nameExcrescents))
-        }
-        
-        if(.typeHO=='refined'){
-          # determine the vcv of the emergent and excrescent variables
-          vcvemerexcr <- as.matrix(Matrix::bdiag(1,as.matrix(ExcrCov)))
-          dimnames(vcvemerexcr) <- list(c(nameEmergent,nameExcrescents),c(nameEmergent,nameExcrescents))
           
-          ExcrCovMat <- ExcrCov
-          temp <- which(ExcrCovMat==1,arr.ind=T)
-          ExcrCovMat[temp] <- paste0('r',rownames(ExcrCov)[temp[,'row']],colnames(ExcrCov)[temp[,'col']])
-          # make symmetric
-          ExcrCovMat[lower.tri(ExcrCovMat)]<-t(ExcrCovMat)[lower.tri(ExcrCovMat)]
-          diag(ExcrCovMat) <- paste0('v',nameExcrescents)
-          vcvemerexcr[nameExcrescents,nameExcrescents] <- as.matrix(ExcrCovMat)
-          vcvemerexcr[nameEmergent,nameEmergent]  <- paste0('v',nameEmergent)
-        }
+          # determine variances of the indicators
+          vcvemerexcr <- matrix(0,nrow=ncol(mL),ncol=ncol(mL))
+          if(.typeHO=='original'){
+            diag(vcvemerexcr) <- c(paste0('v',nameEmergent),paste0('v',nameExcrescents))
+          }
+          
+          if(.typeHO=='refined'){
+            # determine the vcv of the emergent and excrescent variables
+            vcvemerexcr <- as.matrix(Matrix::bdiag(1,as.matrix(ExcrCov)))
+            dimnames(vcvemerexcr) <- list(c(nameEmergent,nameExcrescents),c(nameEmergent,nameExcrescents))
+            
+            ExcrCovMat <- ExcrCov
+            temp <- which(ExcrCovMat==1,arr.ind=T)
+            ExcrCovMat[temp] <- paste0('r',rownames(ExcrCov)[temp[,'row']],colnames(ExcrCov)[temp[,'col']])
+            # make symmetric
+            ExcrCovMat[lower.tri(ExcrCovMat)]<-t(ExcrCovMat)[lower.tri(ExcrCovMat)]
+            diag(ExcrCovMat) <- paste0('v',nameExcrescents)
+            vcvemerexcr[nameExcrescents,nameExcrescents] <- as.matrix(ExcrCovMat)
+            vcvemerexcr[nameEmergent,nameEmergent]  <- paste0('v',nameEmergent)
+          }
+          
+          
+          if(!ThereArePresetWeights){
+            vcvInd <- mx(mx(t(mL),vcvemerexcr),mL)
+          } else if(ThereArePresetWeights){
+            vcvInd <- mx(mx(mx(mx(mLL,t(mL)),vcvemerexcr),mL),mLL)
+          }
+          varInd <- paste0('v',nameIndicators,':=',diag(vcvInd),collapse='\n')
+          
+          
+          # calculate standardized weights
+          SDInd<-paste0('sqrt(',paste0('v',nameIndicators),')')
+          SDIndMatTemp <- matrix(0,nrow=length(SDInd),ncol=length(SDInd))
+          diag(SDIndMatTemp) <- SDInd
+          SDEmerMatTemp <- matrix(0,nrow=length(SDInd),ncol=length(SDInd))
+          diag(SDEmerMatTemp) <- paste0('1/sqrt(',paste0('v',nameEmergent),')')
+          
+          wstd <- mx(mx(paste0('w',nameIndicators),SDIndMatTemp),SDEmerMatTemp)
+          
+          wspecstd <- paste0('wstd',nameIndicators,':=', wstd,collapse='\n')
         
-        
-        if(!ThereArePresetWeights){
-          vcvInd <- mx(mx(t(mL),vcvemerexcr),mL)
-        } else if(ThereArePresetWeights){
-          vcvInd <- mx(mx(mx(mx(mLL,t(mL)),vcvemerexcr),mL),mLL)
-        }
-        varInd <- paste0('v',nameIndicators,':=',diag(vcvInd),collapse='\n')
-        
-        
-        # calculate standardized weights
-        SDInd<-paste0('sqrt(',paste0('v',nameIndicators),')')
-        SDIndMatTemp <- matrix(0,nrow=length(SDInd),ncol=length(SDInd))
-        diag(SDIndMatTemp) <- SDInd
-        SDEmerMatTemp <- matrix(0,nrow=length(SDInd),ncol=length(SDInd))
-        diag(SDEmerMatTemp) <- paste0('1/sqrt(',paste0('v',nameEmergent),')')
-        
-        wstd <- mx(mx(paste0('w',nameIndicators),SDIndMatTemp),SDEmerMatTemp)
-        
-        wspecstd <- paste0('wstd',nameIndicators,':=', wstd,collapse='\n')
-        
+        }else if(.typeHO == 'blended'){
+          Wspec = NULL
+          varInd = NULL 
+          wspecstd = NULL
+          
+            warning("For the refined H-O specification, weights do not need to be seperated manaully. 
+                    Standardized weights will be implemented in the future.")
+          }
       }
       
       
