@@ -9,18 +9,20 @@
 # 
 # The function provides the following argument:
 # .model: lavaan model; this model should not include any additional specifications such as *NA or comments (#).
-# However, it is possible to constrain weights to certain values, e.g., c1 <~ 1*x1 + x2 + 3*x3
 # Moreover, composites need to be specified in one line, i.e., it is currently not possible to specify a composite c1 that is formed 
 # by x1 and x2 as c1<~ x1 and c1<~ x2.
+# Furthermore, single-indicator composites are not supported
 # # .typeHO: the type of H-O specification:
-#   -'refined': Refined H-O specification
 #   -'original': Original H-O specification as presented in Schuberth (2023)
+#   -'refined': Refined H-O specification as presented in Yu et al. (2023)
+#   -'phantom': Phantom-variable H-O specification as presented in Henseler et al. (2025)
+#   -'blended': Blended H-O specification as presented in Henseler et al. (2025) 
 # 
 # .order_indicators: determines the order of the indicators:
 #   -'exact': use the original order of the lavaan model provided by the user
 #   -'random': randomly orders the indicators; this allows to try different specifications, e.g., in case of convergence issues. 
 # 
-# .determine_weights: determines whether the (standardized) weights should be calculated.
+# .determine_weights: determines whether the weights should be calculated. Note, the standardized weights are not reported
 # 
 # 
 #  .print_to_console: determines whether the model is printed to the console. 
@@ -43,7 +45,7 @@ specifyHO <- function(.model = NULL,
   .typeHO <- match.arg(.typeHO)
   .order_indicators <- match.arg(.order_indicators)
   
-  # Identify emergent variables
+  # Identify emergent variables ----
   eachline <- strsplit(x=.model,split='\\n')[[1]]
   positionEmergent <- grep(x=eachline,pattern = '<~')
   
@@ -67,7 +69,7 @@ specifyHO <- function(.model = NULL,
     stop("Please specify your composites in a single line.")
   }
   
-  # loop over all lines that contain a composite
+  # loop over all lines that contain a composite----
   for(Line in positionEmergent){
     
     # split into composite and components
@@ -75,12 +77,6 @@ specifyHO <- function(.model = NULL,
     
     # remove potential spaces
     nameEmergentAndIndicators <- gsub(" ", "", nameEmergentAndIndicators, fixed = TRUE)
-    
-    # nameEmergent <- nameEmergentAndIndicators[1]
-    # 
-    # # label variance of the emergent variable
-    # varEmer <- paste0(nameEmergent,'~~',paste0('v',nameEmergent),'*',nameEmergent)
-    
     
     # Extract names of the components
     nameIndicatorstemp <- strsplit(x=nameEmergentAndIndicators[2],split='+',fixed=TRUE)[[1]]
@@ -121,6 +117,7 @@ specifyHO <- function(.model = NULL,
       stop("Preset weights are currenlty not supported.")
     }
     
+    # Shuffle indicators----
     if(.order_indicators == 'random'){#else the indicator names are used in order as provided by the user
       if(!is.null(.seed)){
         set.seed(.seed)
@@ -132,7 +129,7 @@ specifyHO <- function(.model = NULL,
     WeightValues <- WeightValues[nameIndicators]
     
     
-    # Fix random measurement errors of the components to zero 
+    # Fix random measurement errors of the components to zero ----
     tempErrcov <- paste0(nameIndicators,'~~0*',nameIndicators,collapse='\n')
     
     # Name of the emergent variable
@@ -175,11 +172,10 @@ specifyHO <- function(.model = NULL,
       # Add constraint on the sum of the emergent variable loadings
       ConstraintEmer <- paste0(paste0('l',nameEmergent,1:length(nameIndicators),collapse="+"),"==1")
       
+      # Fix error variance of the phantom variables to zero
       ErrcovPhan <-  paste0(namePhantom,'~~0*',namePhantom,collapse='\n')
     }
     
-    
-    # Specify Excrescent variables and their relations with indicators
     
     # Generate excrescent variables
     nameExcrescents <- paste0('e',Line,1:(length(nameIndicators)-1))
@@ -252,27 +248,20 @@ specifyHO <- function(.model = NULL,
     # Specify relations between phantom variable and indicators
     if(.typeHO == 'phantom'){
       relPhantomInd = list()
-      labLoadPhan <- paste0("l",nameIndicators)
+      labLoadPhan <- c('1',paste0("l",nameIndicators[-1]))
       names(labLoadPhan) <- nameIndicators
+      
+      # RelPhantom <- paste0(namePhantom, ' =~ NA*',nameIndicators,'+', labLoadPhan,'*',nameIndicators ,collapse = '\n')
+      
       for(j in nameIndicators){
         if(j == nameIndicators[1]){
-          relPhantomInd[j] <- paste0(namePhantom[j]," =~ 1*",j,' + ', labLoadPhan[j],"*",j)
+          relPhantomInd[j] <- paste0(namePhantom[j]," =~ ",j)
         }else{
           relPhantomInd[j] <- paste0(namePhantom[j]," =~ NA*",j,' + ', labLoadPhan[j],"*",j)
         }
-        # relPhantomInd[j] <- paste0(namePhantom[j],"=~",
-        #                            if(!is.na(WeightValues[j])){paste0("(1/",WeightValues[j],")")
-        #                            }else{
-        #                              WeightValues[j] 
-        #                            },"*",j)
-        # 
-        # # label the relationship between the phantom variables and the indicators
-        # relPhantomInd[j] = paste0(relPhantomInd[j],if(is.na(WeightValues[j])){paste0("+",paste0("l",j),"*",j)})
       }
-      RelPhantom <- paste0(unlist(relPhantomInd),collapse = '\n') 
+      RelPhantom <- paste0(unlist(relPhantomInd),collapse = '\n')
     }
-    
-    
     
     # Specify covariances between the excrescent variables
     tempExcrCov <- list()
@@ -305,7 +294,7 @@ specifyHO <- function(.model = NULL,
     # Specify phantom variable in case of blended H-O specification p + name of emergent variable 
     if(.typeHO=='blended'){
       namePhantom<-paste0('p',nameEmergent)
-      labWeights <- c(paste0('w',nameIndicators[-1]))
+      labWeights <- paste0('w',nameIndicators[-1])
       
       # Specify effects on the phantom variable (except first indicator)
       tempPhantom=paste0(
@@ -320,42 +309,34 @@ specifyHO <- function(.model = NULL,
     
     
     if(.determine_weights == TRUE){
-      
-      
-      if(.typeHO %in% c('original','refined')){
+      if(.typeHO %in% c('original','refined','phantom')){
         # Create loading matrix of the emergent and excrescent variables
         mL <- rbind(labLoadEmer,
                     as.matrix(LoadingNamesmatrix))
         
-        outW <- mxinv(t(mL))
         
-        # if(ThereArePresetWeights){
-        #   weightValuestemp = WeightValues
-        #   for(i in 1:length(WeightValues)){
-        #     if(is.na(WeightValues[i])){
-        #       weightValuestemp[i] <- paste0("l",nameIndicators[i])
-        #     }else if(!is.na(WeightValues[i])){
-        #       weightValuestemp[i] <- paste0("1/",WeightValues[i])
-        #     }
-        #   }
-        #   
-        #   # construct the loading matrix between the indicators and the phantom variables
-        #   mLL <- matrix(0,nrow=length(nameIndicators),ncol=length(namePhantom),dimnames=list(nameIndicators,namePhantom))
-        #   diag(mLL) <-weightValuestemp
-        #   
-        #   outW <- mx(outW,mxinv(mLL))
-        # }
+        if(.typeHO %in% c('original','refined')){
+          outW <- mxinv(t(mL))
+        }else if(.typeHO=='phantom'){
+          mLL <- matrix(0,nrow=length(nameIndicators),ncol=length(namePhantom),dimnames=list(nameIndicators,namePhantom))
+          diag(mLL) <-labLoadPhan
+          
+          outW <- mx(mxinv(t(mL)),mxinv(mLL))
+        }
         
         Wspec <- paste0('w',nameIndicators,':=',outW[1,],collapse='\n' )
         
+        
+        # Calculate standardized weights ----
+        # Still problematic if a composite is an endogenous variable as the calculation of the variance 
+        # cannot be done without knowing the exact model and other equations
+        # Therefore, the standardized weights are currenlty not reported
         
         # determine variances of the indicators
         vcvemerexcr <- matrix(0,nrow=ncol(mL),ncol=ncol(mL))
         if(.typeHO=='original'){
           diag(vcvemerexcr) <- c(paste0('v',nameEmergent),paste0('v',nameExcrescents))
-        }
-        
-        if(.typeHO=='refined'){
+        }else if(.typeHO %in% c('refined','phantom')){
           # determine the vcv of the emergent and excrescent variables
           vcvemerexcr <- as.matrix(Matrix::bdiag(1,as.matrix(ExcrCov)))
           dimnames(vcvemerexcr) <- list(c(nameEmergent,nameExcrescents),c(nameEmergent,nameExcrescents))
@@ -368,14 +349,17 @@ specifyHO <- function(.model = NULL,
           diag(ExcrCovMat) <- paste0('v',nameExcrescents)
           vcvemerexcr[nameExcrescents,nameExcrescents] <- as.matrix(ExcrCovMat)
           vcvemerexcr[nameEmergent,nameEmergent]  <- paste0('v',nameEmergent)
+          
+
         }
         
-        
-        if(!ThereArePresetWeights){
-          vcvInd <- mx(mx(t(mL),vcvemerexcr),mL)
-        } else if(ThereArePresetWeights){
+        if(.typeHO %in% c('original','refined')){
+          vcvInd <- mx(mx(t(mL),vcvemerexcr),mL)  
+        }else if(.typeHO=='phantom'){
           vcvInd <- mx(mx(mx(mx(mLL,t(mL)),vcvemerexcr),mL),mLL)
         }
+        
+
         varInd <- paste0('v',nameIndicators,':=',diag(vcvInd),collapse='\n')
         
         
@@ -392,17 +376,8 @@ specifyHO <- function(.model = NULL,
         
       }else if(.typeHO == 'blended'){
         Wspec = NULL
-        varInd = NULL 
-        wspecstd = NULL
-        
-        warning("For the refined H-O specification, weights do not need to be calculated manually. 
-                    Standardized weights will be implemented in the future.")
-      }else if(.typeHO == 'phantom'){
-        
-        # Unstandardized weights are calculated as 1/Loading of PV on component
-        Wspec <- paste0('w',nameIndicators[1],':= 1 \n',paste0('w',nameIndicators[-1],':=',"1/",labLoadPhan[-1] ,collapse='\n' ))
-        
-        
+        # varInd = NULL 
+        # wspecstd = NULL
       }
     }
     
@@ -420,11 +395,12 @@ specifyHO <- function(.model = NULL,
                                paste0("\n",RelPhantom,"\n",ErrcovPhan,"\n",ConstraintEmer)
                              },
                              if(.determine_weights == TRUE){
-                               if(.typeHO %in% c('original','refined')){
-                                 paste0('\n',Wspec,'\n',varInd, '\n',wspecstd)  
-                               }else if(.typeHO %in% c('blended','phantom')){
-                                 paste0('\n',Wspec)
-                               }
+                               paste0('\n',Wspec)
+                               # if(.typeHO %in% c('original','refined','phantom')){
+                               #   paste0('\n',Wspec,'\n',varInd, '\n',wspecstd)  
+                               # }else if(.typeHO %in% c('blended')){
+                               #   paste0('\n',Wspec)
+                               # }
                              }
     )  
     
