@@ -1,3 +1,5 @@
+# THIS FUNCTION WILL BE DEPRECATED
+
 # packages required to use this function
 # install.packages(c('combinat','calculus'))
 
@@ -260,7 +262,7 @@ specifyHO_deprecated <- function(.model = NULL,
         
       }
       
-      
+
       # Calculate weights
       if(.determine_weights == TRUE){
         
@@ -289,7 +291,7 @@ specifyHO_deprecated <- function(.model = NULL,
         
         Wspec <- paste0('w',nameIndicators,':=',outW[1,],collapse='\n' )
         
-        
+
         # determine variances of the indicators
         vcvemerexcr <- matrix(0,nrow=ncol(mL),ncol=ncol(mL))
         if(.typeHO=='normal'){
@@ -313,9 +315,9 @@ specifyHO_deprecated <- function(.model = NULL,
         
         
         if(!ThereArePresetWeights){
-          vcvInd <- mx(mx(t(mL),vcvemerexcr),mL)
+        vcvInd <- mx(mx(t(mL),vcvemerexcr),mL)
         } else if(ThereArePresetWeights){
-          vcvInd <- mx(mx(mx(mx(mLL,t(mL)),vcvemerexcr),mL),mLL)
+        vcvInd <- mx(mx(mx(mx(mLL,t(mL)),vcvemerexcr),mL),mLL)
         }
         varInd <- paste0('v',nameIndicators,':=',diag(vcvInd),collapse='\n')
         

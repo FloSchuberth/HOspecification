@@ -1,3 +1,12 @@
+# News
+
+Update 01-10-2025:
+
+- Implement the blended and phantom-variable H-O specification
+- Remove the standardized weights (these cannot be calculated when a composite is a dependent variable)
+- Remove the option to fix weights (will be implemented in the future)
+- The original version of the specifyHO() function can still be access as specifyHO_deprecated (originalHOspecify.R)
+
 # Function that facilitates using the H-O specification
 
 To load the specifyHO, you can use the following syntax:
